@@ -16,12 +16,15 @@ namespace CloudStoreApp.Helpers
             var targetDirectory = Path.Combine(Preferences.Instance.CloudStoragePath, targetFolderName);
             var targetDirectoryInfo = GetDirectoryInfo(targetDirectory);
 
-            if (Preferences.Instance.StoredFolders.Exists(f => f.SourceDirectory == sourceDirectory)) return null;
+            if (Preferences.Instance.StoredFolders != null && Preferences.Instance.StoredFolders.Count != 0)
+            {
+                if (Preferences.Instance.StoredFolders.Exists(f => f.SourceDirectory == sourceDirectory)) return null;
+            }
             
             var storedFolder = new StoredFolder
             {
                 Id = Guid.NewGuid(),
-                Name = sourceDirectoryInfo.Name,
+                Name = targetFolderName,
                 SourceDirectory = sourceDirectoryInfo.FullName,
                 TargetDirectory = targetDirectoryInfo.FullName
             };

@@ -71,7 +71,7 @@ namespace CloudStoreApp.ViewModels
         {
             StoredFolders.Clear();
 
-            if (!IsLoaded || Preferences.Instance.StoredFolders?.Count == 0) return;
+            if (Preferences.Instance.StoredFolders == null || Preferences.Instance.StoredFolders.Count == 0) return;
 
             Preferences.Instance.StoredFolders.ForEach(storedFolder =>
             {
