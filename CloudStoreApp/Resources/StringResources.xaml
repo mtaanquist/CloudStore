@@ -1,0 +1,11 @@
+﻿<ResourceDictionary 
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="InitialSetupCaption">Initial Setup</system:String>
+    <system:String x:Key="InitialSetupMessage">It looks like you're starting the application for the first time. Would you like to import an existing configuration?</system:String>
+
+    <system:String x:Key="SelectCloudStoragePathCaption">Select Cloud Storage Path</system:String>
+    <system:String x:Key="SelectCloudStoragePathMessage">In order for the application to work, you'll need to set the cloud storage path. Please press "OK" and choose a folder. You can change it later. If you'd rather wait, press Cancel.</system:String>
+</ResourceDictionary>

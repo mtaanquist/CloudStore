@@ -1,0 +1,53 @@
+﻿<Window x:Class="CloudStoreApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CloudStoreApp"
+        xmlns:vm="clr-namespace:CloudStoreApp.ViewModels"
+        mc:Ignorable="d"
+        Title="CloudStore" Height="480" Width="800" ResizeMode="NoResize">
+
+    <Window.DataContext>
+        <vm:MainWindowViewModel />
+    </Window.DataContext>
+
+    <DockPanel>
+        <ListBox DockPanel.Dock="Left"
+                 Name="StoredFoldersListBox" 
+                 Width="624"
+                 Height="420"
+                 Margin="8"                
+                 BorderThickness="1" 
+                 VerticalAlignment="Top" 
+                 HorizontalAlignment="Stretch" 
+                 ItemsSource="{Binding StoredFolders}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel>
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" />
+                        <TextBlock Text="{Binding SourceDirectory}" Opacity="0.8" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <DockPanel>
+            <StackPanel 
+                DockPanel.Dock="Top" 
+                Margin="0,8,8,8">
+                <Label 
+                    Content="Manage Folders" 
+                    FontWeight="Bold"
+                    Margin="0,0,0,8" />
+                <Button 
+                    Command="{Binding StoreNewFolderCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
+                    HorizontalAlignment="Stretch" 
+                    Margin="0,0,0,8">Add new folder...</Button>
+                <Button 
+                    HorizontalAlignment="Stretch"
+                    Margin="0,0,0,8">View details</Button>
+            </StackPanel>
+        </DockPanel>
+    </DockPanel>
+</Window>
