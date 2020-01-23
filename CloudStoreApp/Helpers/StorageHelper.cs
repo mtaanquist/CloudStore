@@ -1,67 +1,62 @@
-﻿using CloudStoreApp.Models;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.Windows.Forms;
+using CloudStoreApp.Models;
 
 namespace CloudStoreApp.Helpers
 {
     public static class StorageHelper
     {
-        public static StoredFolder StoreFolder(string sourceDirectory, string targetFolderName)
+        public static void StoreFolder(string sourceDirectory, string targetFolderName)
         {
             var sourceDirectoryInfo = GetDirectoryInfo(sourceDirectory);
-            var targetDirectory = Path.Combine(Preferences.Instance.CloudStoragePath, targetFolderName);
-            var targetDirectoryInfo = GetDirectoryInfo(targetDirectory);
 
-            if (Preferences.Instance.StoredFolders != null && Preferences.Instance.StoredFolders.Count != 0)
-            {
-                if (Preferences.Instance.StoredFolders.Exists(f => f.SourceDirectory == sourceDirectory)) return null;
-            }
-            
+            if (Preferences.Instance.StoredFolders != null && Preferences.Instance.StoredFolders.Count != 0 &&
+                Preferences.Instance.StoredFolders.Exists(f => f.SourceDirectory == sourceDirectory))
+                return;
+
             var storedFolder = new StoredFolder
             {
                 Id = Guid.NewGuid(),
                 Name = targetFolderName,
-                SourceDirectory = sourceDirectoryInfo.FullName,
-                TargetDirectory = targetDirectoryInfo.FullName
+                SourceDirectory = sourceDirectoryInfo.FullName
             };
 
             MoveFolder(storedFolder);
-            NativeMethods.CreateSymbolicLink(storedFolder.SourceDirectory, storedFolder.TargetDirectory, 0x1);
+            NativeMethods.CreateSymbolicLink(storedFolder.SourceDirectory, GetTargetDirectory(storedFolder), 0x1);
 
             storedFolder.IsMoved = true;
-            Preferences.Instance.AddStoredFolder(storedFolder);
+            Preferences.Instance.StoredFolders?.Add(storedFolder);
 
             if (Preferences.Instance.HideSourceDirectory) HideDirectory(storedFolder.SourceDirectory);
-            PreferencesHelper.ExportPreferences();
-            return storedFolder;
+            PreferencesHelper.SavePreferences();
         }
 
         public static string SelectFolder()
         {
-            using var folderDialog = new System.Windows.Forms.FolderBrowserDialog
+            using var folderDialog = new FolderBrowserDialog
             {
                 ShowNewFolderButton = false
             };
 
             var dialogResult = folderDialog.ShowDialog();
-            if (dialogResult != System.Windows.Forms.DialogResult.OK) return string.Empty;
-            return folderDialog.SelectedPath;
+            return dialogResult != DialogResult.OK ? string.Empty : folderDialog.SelectedPath;
         }
 
-        private static void MoveFolder(StoredFolder storedFolder)
+        public static void MoveFolder(StoredFolder folder)
         {
-            try
-            {
-                Directory.Move(storedFolder.SourceDirectory, storedFolder.TargetDirectory);
-            }
-            catch (Exception ex)
-            {
-                storedFolder.LastException = ex;
-            }
+            if (folder == null)
+                throw new ArgumentNullException(nameof(folder));
+
+            Directory.Move(folder.SourceDirectory, GetTargetDirectory(folder));
+        }
+
+        public static void DeleteFolder(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                throw new ArgumentNullException(nameof(path));
+
+            Directory.Delete(path);
         }
 
         private static void HideDirectory(string targetDirectory)
@@ -76,9 +71,18 @@ namespace CloudStoreApp.Helpers
             return directoryInfo.Name;
         }
 
+        public static string GetTargetDirectory(StoredFolder folder)
+        {
+            if (folder == null)
+                throw new ArgumentNullException(nameof(folder));
+
+            return Path.Combine(Preferences.Instance.CloudStoragePath, folder.Name);
+        }
+
         private static DirectoryInfo GetDirectoryInfo(string path)
         {
-            if (string.IsNullOrEmpty(path)) return null;
+            if (string.IsNullOrEmpty(path))
+                throw new ArgumentNullException(nameof(path));
 
             return new DirectoryInfo(path);
         }

@@ -8,9 +8,9 @@ namespace CloudStoreApp.Models
 
         public string Name { get; set; }
         public string SourceDirectory { get; set; }
-        public string TargetDirectory { get; set; }
         public bool IsMoved { get; set; }
 
+        public bool HasError => LastException != null;
         public Exception LastException { get; set; }
     }
 }

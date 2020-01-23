@@ -1,18 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CloudStoreApp.ViewModels
 {
     public class StoredFolderViewModel : ViewModelBase
     {
         private Guid _id;
+
+        private string _name;
+
+        private string _sourceDirectory;
+
+        private string _targetDirectory;
+
         public Guid Id
         {
-            get
-            {
-                return _id;
-            }
+            get => _id;
             set
             {
                 if (value == _id) return;
@@ -21,13 +23,9 @@ namespace CloudStoreApp.ViewModels
             }
         }
 
-        private string _name;
         public string Name
         {
-            get
-            {
-                return _name;
-            }
+            get => _name;
             set
             {
                 if (value == _name) return;
@@ -36,13 +34,9 @@ namespace CloudStoreApp.ViewModels
             }
         }
 
-        private string _sourceDirectory;
         public string SourceDirectory
         {
-            get
-            {
-                return _sourceDirectory;
-            }
+            get => _sourceDirectory;
             set
             {
                 if (value == _sourceDirectory) return;
@@ -51,13 +45,9 @@ namespace CloudStoreApp.ViewModels
             }
         }
 
-        private string _targetDirectory;
         public string TargetDirectory
         {
-            get
-            {
-                return _targetDirectory;
-            }
+            get => _targetDirectory;
             set
             {
                 if (value == _targetDirectory) return;
