@@ -7,6 +7,8 @@ namespace CloudStoreApp.Helpers
 {
     public static class StorageHelper
     {
+        const string USER_PROFILE_PATH = @"%UserProfilePath%";
+
         internal static void StoreFolder(string sourceDirectory, string targetFolderName)
         {
             if (Preferences.Instance.StoredFolders != null
@@ -23,8 +25,8 @@ namespace CloudStoreApp.Helpers
             if (sourceDirectoryName.Contains(userProfilePath, StringComparison.OrdinalIgnoreCase))
             {
                 sourceDirectoryName = sourceDirectoryName.Replace(
-                    userProfilePath, 
-                    "%UserProfilePath%", 
+                    userProfilePath,
+                    USER_PROFILE_PATH, 
                     StringComparison.OrdinalIgnoreCase
                 );
             }
@@ -60,8 +62,8 @@ namespace CloudStoreApp.Helpers
         {
             var targetDirectoryPath = GetTargetDirectory(folder);
             var sourceDirectoryInfo = new DirectoryInfo(GetSourceDirectory(folder));
-
-            if (Directory.Exists(targetDirectoryPath) && Directory.Exists(folder.SourceDirectory))
+            
+            if (Directory.Exists(targetDirectoryPath) && Directory.Exists(sourceDirectoryInfo.FullName))
             {
                 if (!sourceDirectoryInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
                 {
@@ -70,16 +72,16 @@ namespace CloudStoreApp.Helpers
                 }
                 else
                 {
-                    DeleteFolder(folder.SourceDirectory);
-                    NativeMethods.CreateSymbolicLink(folder.SourceDirectory, targetDirectoryPath, 0x1);
+                    DeleteFolder(sourceDirectoryInfo.FullName);
+                    NativeMethods.CreateSymbolicLink(sourceDirectoryInfo.FullName, targetDirectoryPath, 0x1);
                 }
             }
-            else if (Directory.Exists(targetDirectoryPath) && !Directory.Exists(folder.SourceDirectory))
+            else if (Directory.Exists(targetDirectoryPath) && !Directory.Exists(sourceDirectoryInfo.FullName))
             {
                 // target directory exists, but source directory doesn't; re-establish reparse point
-                NativeMethods.CreateSymbolicLink(folder.SourceDirectory, targetDirectoryPath, 0x1);
+                NativeMethods.CreateSymbolicLink(sourceDirectoryInfo.FullName, targetDirectoryPath, 0x1);
             }
-            else if (!Directory.Exists(targetDirectoryPath) && Directory.Exists(folder.SourceDirectory))
+            else if (!Directory.Exists(targetDirectoryPath) && Directory.Exists(sourceDirectoryInfo.FullName))
             {
                 if (sourceDirectoryInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
                 {
@@ -89,7 +91,7 @@ namespace CloudStoreApp.Helpers
                 else
                 {
                     MoveFolder(folder);
-                    NativeMethods.CreateSymbolicLink(folder.SourceDirectory, targetDirectoryPath, 0x1);
+                    NativeMethods.CreateSymbolicLink(sourceDirectoryInfo.FullName, targetDirectoryPath, 0x1);
                 }
             }
             else
@@ -178,10 +180,10 @@ namespace CloudStoreApp.Helpers
             if (folder == null)
                 throw new ArgumentNullException(nameof(folder));
 
-            if (folder.SourceDirectory.Contains("%UserProfilePath%", StringComparison.OrdinalIgnoreCase))
+            if (folder.SourceDirectory.Contains(USER_PROFILE_PATH, StringComparison.OrdinalIgnoreCase))
             {
                 return folder.SourceDirectory.Replace(
-                    "%UserProfilePath%",
+                    USER_PROFILE_PATH,
                     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                     StringComparison.OrdinalIgnoreCase
                 );
