@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows.Input;
 using CloudStoreApp.Commands;
+using CloudStoreApp.Helpers;
 using CloudStoreApp.Models;
 
 namespace CloudStoreApp.ViewModels
@@ -9,6 +11,19 @@ namespace CloudStoreApp.ViewModels
     {
         public MainWindowViewModel()
         {
+            // determine if this is first launch
+            FirstLaunch = !PreferencesHelper.PreferencesFileExists();
+            if (FirstLaunch)
+            {
+                // on first launch, create a new preferences file
+                PreferencesHelper.CreatePreferencesFile("preferences.json");
+            }
+            else
+            {
+                PreferencesHelper.LoadPreferences();
+                FirstLaunch = !string.IsNullOrEmpty(Preferences.Instance.CloudStorePath);
+            }
+
             StoreNewFolderCommand = new RelayCommand(
                 param =>
                 {
@@ -17,16 +32,31 @@ namespace CloudStoreApp.ViewModels
 
                     BuildStoredFoldersList();
                 },
-                param => !string.IsNullOrEmpty(Preferences.Instance.CloudStoragePath)
+                param => true
+            );
+
+            OpenPreferencesCommand = new RelayCommand(
+                param =>
+                {
+                    var preferencesWindow = new PreferencesWindow();
+                    preferencesWindow.ShowDialog();
+
+                    BuildStoredFoldersList();
+                }
             );
 
             BuildStoredFoldersList();
         }
 
+        public bool FirstLaunch { get; set; }
+
         public ObservableCollection<StoredFolderViewModel> StoredFolders { get; } =
             new ObservableCollection<StoredFolderViewModel>();
 
+        #region Commands
         public ICommand StoreNewFolderCommand { get; }
+        public ICommand OpenPreferencesCommand { get; }
+        #endregion
 
         private void BuildStoredFoldersList()
         {
@@ -40,7 +70,7 @@ namespace CloudStoreApp.ViewModels
                 {
                     Id = storedFolder.Id,
                     Name = storedFolder.Name,
-                    SourceDirectory = storedFolder.SourceDirectory
+                    SourceDirectory = StorageHelper.GetSourceDirectory(storedFolder)
                 });
             });
         }

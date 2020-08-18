@@ -9,8 +9,22 @@ namespace CloudStoreApp.Helpers
 {
     public static class PreferencesHelper
     {
+        public static bool SelectCloudStorePath()
+        {
+            if (!File.Exists("preferences.json"))
+                throw new FileNotFoundException();
+
+            Preferences.Instance.CloudStorePath = StorageHelper.SelectFolder();
+            if (string.IsNullOrEmpty(Preferences.Instance.CloudStorePath))
+                return false;
+
+            SavePreferences();
+            return true;
+        }
+
         public static void SavePreferences()
         {
+            Preferences.Instance.LastUpdated = DateTime.Now;
             ExportPreferences("preferences.json");
         }
 
@@ -22,52 +36,16 @@ namespace CloudStoreApp.Helpers
 
         private static void ImportPreferences(string filePath)
         {
-            if (string.IsNullOrEmpty(Preferences.Instance.CloudStoragePath))
-                throw new ApplicationException(ResourceHelper.GetString("MissingCloudStoragePath"));
+            if (string.IsNullOrEmpty(Preferences.Instance.CloudStorePath))
+                throw new ApplicationException(Resources.Strings.MissingCloudStoragePath); 
 
             var preferences = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(filePath));
+            Preferences.Instance.StoredFolders.Clear();
 
             // re-establish directories where possible
             foreach (var folder in preferences.StoredFolders)
             {
-                var targetDirectoryPath = StorageHelper.GetTargetDirectory(folder);
-
-                if (Directory.Exists(targetDirectoryPath) && Directory.Exists(folder.SourceDirectory))
-                {
-                    var sourceDirectoryInfo = new DirectoryInfo(folder.SourceDirectory);
-                    if (!sourceDirectoryInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    {
-                        folder.LastException =
-                            new IOException(ResourceHelper.GetString("BothPhysicalDirectoriesExistIOException"));
-                        continue;
-                    }
-
-                    StorageHelper.DeleteFolder(folder.SourceDirectory);
-                    NativeMethods.CreateSymbolicLink(folder.SourceDirectory, targetDirectoryPath, 0x1);
-                }
-                else if (Directory.Exists(targetDirectoryPath) && !Directory.Exists(folder.SourceDirectory))
-                {
-                    // target directory exists, but source directory doesn't; re-establish reparse point
-                    NativeMethods.CreateSymbolicLink(folder.SourceDirectory, targetDirectoryPath, 0x1);
-                }
-                else if (!Directory.Exists(targetDirectoryPath) && Directory.Exists(folder.SourceDirectory))
-                {
-                    var sourceDirectoryInfo = new DirectoryInfo(folder.SourceDirectory);
-                    if (sourceDirectoryInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    {
-                        folder.LastException =
-                            new IOException(ResourceHelper.GetString("ReparsePointExistsWithoutTargetDirectory"));
-                        continue;
-                    }
-
-                    StorageHelper.MoveFolder(folder);
-                    NativeMethods.CreateSymbolicLink(folder.SourceDirectory, targetDirectoryPath, 0x1);
-                }
-                else
-                {
-                    // none of the directories exist, and we can't recover it from the list
-                    folder.LastException = new DirectoryNotFoundException();
-                }
+                StorageHelper.RestoreFolder(folder);
             }
 
             // when done with the file, export it as a new file
@@ -90,17 +68,26 @@ namespace CloudStoreApp.Helpers
             }
         }
 
-        public static void ReadPreferencesFile()
+        public static void LoadPreferences()
         {
-            if (File.Exists("preferences.json")) ImportPreferences("preferences.json");
+            if (PreferencesFileExists())
+            {
+                Preferences.Instance = JsonSerializer.Deserialize<Preferences>(File.ReadAllText("preferences.json"));
+            }
+        }
+
+        public static bool PreferencesFileExists()
+        {
+            return File.Exists("preferences.json");
         }
 
         public static void CreatePreferencesFile(string storageDirectoryPath)
         {
             if (!string.IsNullOrEmpty(storageDirectoryPath))
-                Preferences.Instance.CloudStoragePath = storageDirectoryPath;
+            {
+                Preferences.Instance.CloudStorePath = storageDirectoryPath;
+            }
 
-            Preferences.Instance.LastUpdated = DateTime.Now;
             SavePreferences();
         }
     }

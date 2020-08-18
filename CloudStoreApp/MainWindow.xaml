@@ -32,7 +32,7 @@
             <MenuItem Header="Edit">
                 <MenuItem Header="Edit Selected..." InputGestureText="Ctrl+E" />
                 <Separator />
-                <MenuItem Header="Preferences" InputGestureText="Ctrl+," />
+                <MenuItem Header="Preferences" Command="{Binding OpenPreferencesCommand}" InputGestureText="Ctrl+," />
             </MenuItem>
             <MenuItem Header="Help">
                 <MenuItem Header="Website" />
@@ -44,7 +44,8 @@
                     Height="32"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
-            <Button>
+            <Button 
+                Command="{Binding StoreNewFolderCommand}">
                 <icons:FontAwesome Kind="FolderPlusSolid" />
             </Button>
         </StackPanel>

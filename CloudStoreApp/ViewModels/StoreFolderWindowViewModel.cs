@@ -1,7 +1,9 @@
-﻿using System.Windows;
+﻿using System.IO;
+using System.Windows;
 using System.Windows.Input;
 using CloudStoreApp.Commands;
 using CloudStoreApp.Helpers;
+using CloudStoreApp.Models;
 
 namespace CloudStoreApp.ViewModels
 {
@@ -13,6 +15,9 @@ namespace CloudStoreApp.ViewModels
 
         public StoreFolderWindowViewModel()
         {
+            if (string.IsNullOrEmpty(Preferences.Instance.CloudStorePath))
+                throw new DirectoryNotFoundException();
+
             SelectFolderCommand = new RelayCommand(param =>
             {
                 SourceDirectoryPath = StorageHelper.SelectFolder();
