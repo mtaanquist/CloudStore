@@ -6,11 +6,11 @@ namespace CloudStoreApp.Models
     {
         public Guid Id { get; set; }
 
-        public string Name { get; set; }
-        public string SourceDirectory { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string SourceDirectory { get; set; } = string.Empty;
         public bool IsMoved { get; set; }
 
         public bool HasError => LastException != null;
-        public Exception LastException { get; set; }
+        public Exception? LastException { get; set; }
     }
 }

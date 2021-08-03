@@ -11,18 +11,18 @@ namespace CloudStoreApp.ViewModels
 {
     public class PreferencesWindowViewModel : ViewModelBase
     {
-        private string _cloudStorePath;
+        private string _cloudStorePath = string.Empty;
 
         public PreferencesWindowViewModel()
         {
             // ensure we have a preferences file
             if (!PreferencesHelper.PreferencesFileExists())
             {
-                PreferencesHelper.CreatePreferencesFile("preferences.json");
+                PreferencesHelper.CreatePreferencesFile();
             }
 
-            PreferencesHelper.LoadPreferences();
-            CloudStorePath = Preferences.Instance.CloudStorePath;
+            Preferences prefs = PreferencesHelper.LoadPreferences();
+            CloudStorePath = prefs.CloudStorePath;
 
             SelectFolderCommand = new RelayCommand(param =>
             {
@@ -52,8 +52,9 @@ namespace CloudStoreApp.ViewModels
         #region Methods
         private void SaveChanges()
         {
-            Preferences.Instance.CloudStorePath = CloudStorePath;
-            PreferencesHelper.SavePreferences();
+            Preferences prefs = PreferencesHelper.LoadPreferences();
+            prefs.CloudStorePath = CloudStorePath;
+            PreferencesHelper.SavePreferences(prefs);
         }
         #endregion
 

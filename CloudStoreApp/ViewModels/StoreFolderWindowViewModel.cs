@@ -9,14 +9,16 @@ namespace CloudStoreApp.ViewModels
 {
     public class StoreFolderWindowViewModel : ViewModelBase
     {
-        private string _sourceDirectoryPath;
-
-        private string _targetFolderName;
+        private string _sourceDirectoryPath = string.Empty;
+        private string _targetFolderName = string.Empty;
 
         public StoreFolderWindowViewModel()
         {
-            if (string.IsNullOrEmpty(Preferences.Instance.CloudStorePath))
+            Preferences prefs = PreferencesHelper.LoadPreferences();
+            if (string.IsNullOrEmpty(prefs.CloudStorePath))
+            {
                 throw new DirectoryNotFoundException();
+            }
 
             SelectFolderCommand = new RelayCommand(param =>
             {

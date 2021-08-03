@@ -9,10 +9,15 @@ namespace CloudStoreApp.ViewModels
 {
     public abstract class ViewModelBase : INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
+            if (propertyName is null)
+            {
+                throw new ArgumentNullException(nameof(propertyName));
+            }
+
             VerifyPropertyName(propertyName);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -32,7 +37,10 @@ namespace CloudStoreApp.ViewModels
 
         protected virtual bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
-            if (EqualityComparer<T>.Default.Equals(storage, value)) return false;
+            if (EqualityComparer<T>.Default.Equals(storage, value))
+            {
+                return false;
+            }
 
             storage = value;
             OnPropertyChanged(propertyName);

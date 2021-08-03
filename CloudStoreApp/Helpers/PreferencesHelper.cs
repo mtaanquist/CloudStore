@@ -9,47 +9,61 @@ namespace CloudStoreApp.Helpers
 {
     public static class PreferencesHelper
     {
+        private const string PREFERENCES_FILENAME = "preferences.json";
+
         public static bool SelectCloudStorePath()
         {
-            if (!File.Exists("preferences.json"))
-                throw new FileNotFoundException();
+            Preferences prefs = LoadPreferences();
 
-            Preferences.Instance.CloudStorePath = StorageHelper.SelectFolder();
-            if (string.IsNullOrEmpty(Preferences.Instance.CloudStorePath))
+            string cloudStorePath = StorageHelper.SelectFolder();
+            if (string.IsNullOrEmpty(cloudStorePath))
+            {
                 return false;
+            }
+            prefs.CloudStorePath = cloudStorePath;
 
-            SavePreferences();
+            SavePreferences(prefs);
             return true;
         }
 
-        public static void SavePreferences()
+        public static void SavePreferences(Preferences prefs)
         {
-            Preferences.Instance.LastUpdated = DateTime.Now;
-            ExportPreferences("preferences.json");
+            prefs.LastUpdated = DateTime.Now;
+            ExportPreferences(prefs, PREFERENCES_FILENAME);
         }
 
-        public static void ExportPreferences(string path)
+        public static void ExportPreferences(Preferences prefs, string path)
         {
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            File.WriteAllText(path, JsonSerializer.Serialize(Preferences.Instance, options));
+            JsonSerializerOptions? options = new() { WriteIndented = true };
+            File.WriteAllText(path, JsonSerializer.Serialize(prefs, options));
         }
 
         private static void ImportPreferences(string filePath)
         {
-            if (string.IsNullOrEmpty(Preferences.Instance.CloudStorePath))
-                throw new ApplicationException(Resources.Strings.MissingCloudStoragePath); 
+            Preferences prefs = LoadPreferences();
 
-            var preferences = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(filePath));
-            Preferences.Instance.StoredFolders.Clear();
+            if (string.IsNullOrEmpty(prefs.CloudStorePath))
+            {
+                throw new ApplicationException(Resources.Strings.MissingCloudStoragePath);
+            }
+
+            string content = File.ReadAllText(filePath);
+            var newPrefs = JsonSerializer.Deserialize<Preferences>(content);
+            if (newPrefs is null)
+            {
+                throw new FileLoadException(filePath);
+            }
+
+            prefs.StoredFolders.Clear();
 
             // re-establish directories where possible
-            foreach (var folder in preferences.StoredFolders)
+            foreach (var folder in newPrefs.StoredFolders)
             {
-                StorageHelper.RestoreFolder(folder);
+                StorageHelper.RestoreFolder(prefs, folder);
             }
 
             // when done with the file, export it as a new file
-            SavePreferences();
+            SavePreferences(newPrefs);
         }
 
         public static void LoadExistingPreferencesFile()
@@ -68,27 +82,33 @@ namespace CloudStoreApp.Helpers
             }
         }
 
-        public static void LoadPreferences()
+        public static Preferences LoadPreferences()
         {
-            if (PreferencesFileExists())
+            if (!PreferencesFileExists())
             {
-                Preferences.Instance = JsonSerializer.Deserialize<Preferences>(File.ReadAllText("preferences.json"));
+                throw new FileNotFoundException(PREFERENCES_FILENAME);
             }
+
+            var content = File.ReadAllText(PREFERENCES_FILENAME);
+            var preferences = JsonSerializer.Deserialize<Preferences>(content);
+            if (preferences is null)
+            {
+                throw new FileLoadException();
+            }
+
+            return preferences;
         }
 
         public static bool PreferencesFileExists()
         {
-            return File.Exists("preferences.json");
+            return File.Exists(PREFERENCES_FILENAME);
         }
 
-        public static void CreatePreferencesFile(string storageDirectoryPath)
+        public static void CreatePreferencesFile()
         {
-            if (!string.IsNullOrEmpty(storageDirectoryPath))
-            {
-                Preferences.Instance.CloudStorePath = storageDirectoryPath;
-            }
-
-            SavePreferences();
+            Preferences prefs = new();
+            JsonSerializerOptions? options = new() { WriteIndented = true };
+            File.WriteAllText(PREFERENCES_FILENAME, JsonSerializer.Serialize(prefs, options));
         }
     }
 }

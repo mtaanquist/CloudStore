@@ -5,12 +5,9 @@ namespace CloudStoreApp.ViewModels
     public class StoredFolderViewModel : ViewModelBase
     {
         private Guid _id;
-
-        private string _name;
-
-        private string _sourceDirectory;
-
-        private string _targetDirectory;
+        private string _name = string.Empty;
+        private string _sourceDirectory = string.Empty;
+        private string _targetDirectory = string.Empty;
 
         public Guid Id
         {
@@ -58,7 +55,7 @@ namespace CloudStoreApp.ViewModels
 
         public bool IsMoved { get; set; }
 
-        public Exception LastException { get; set; }
+        public Exception? LastException { get; set; }
 
         public override string ToString()
         {

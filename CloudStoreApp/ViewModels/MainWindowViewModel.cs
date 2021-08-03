@@ -16,55 +16,60 @@ namespace CloudStoreApp.ViewModels
             if (FirstLaunch)
             {
                 // on first launch, create a new preferences file
-                PreferencesHelper.CreatePreferencesFile("preferences.json");
+                PreferencesHelper.CreatePreferencesFile();
             }
             else
             {
-                PreferencesHelper.LoadPreferences();
-                FirstLaunch = !string.IsNullOrEmpty(Preferences.Instance.CloudStorePath);
+                Preferences? prefs = PreferencesHelper.LoadPreferences();
+                FirstLaunch = !string.IsNullOrEmpty(prefs?.CloudStorePath);
             }
 
-            StoreNewFolderCommand = new RelayCommand(
-                param =>
-                {
-                    var storeFolderWindow = new StoreFolderWindow();
-                    storeFolderWindow.ShowDialog();
+            StoreNewFolderCommand = new RelayCommand(param =>
+            {
+                StoreFolderWindow storeFolderWindow = new();
+                _ = storeFolderWindow.ShowDialog();
 
-                    BuildStoredFoldersList();
-                },
-                param => true
-            );
+                BuildStoredFoldersList();
+            }, param => true);
 
-            OpenPreferencesCommand = new RelayCommand(
-                param =>
-                {
-                    var preferencesWindow = new PreferencesWindow();
-                    preferencesWindow.ShowDialog();
+            OpenPreferencesCommand = new RelayCommand(param =>
+            {
+                PreferencesWindow preferencesWindow = new();
+                _ = preferencesWindow.ShowDialog();
 
-                    BuildStoredFoldersList();
-                }
-            );
+                BuildStoredFoldersList();
+            }, param => true);
+
+            ImportPreferencesCommand = new RelayCommand(param =>
+            {
+                PreferencesHelper.LoadExistingPreferencesFile();
+            }, param => true);
 
             BuildStoredFoldersList();
         }
 
         public bool FirstLaunch { get; set; }
 
-        public ObservableCollection<StoredFolderViewModel> StoredFolders { get; } =
-            new ObservableCollection<StoredFolderViewModel>();
+        public ObservableCollection<StoredFolderViewModel> StoredFolders { get; } = new();
 
         #region Commands
         public ICommand StoreNewFolderCommand { get; }
         public ICommand OpenPreferencesCommand { get; }
+        public ICommand ImportPreferencesCommand { get; }
         #endregion
 
         private void BuildStoredFoldersList()
         {
+            Preferences prefs = PreferencesHelper.LoadPreferences();
+
             StoredFolders.Clear();
 
-            if (Preferences.Instance.StoredFolders == null || Preferences.Instance.StoredFolders.Count == 0) return;
+            if (prefs.StoredFolders == null || prefs.StoredFolders.Count == 0)
+            {
+                return;
+            }
 
-            Preferences.Instance.StoredFolders.ForEach(storedFolder =>
+            prefs.StoredFolders.ForEach(storedFolder =>
             {
                 StoredFolders.Add(new StoredFolderViewModel
                 {

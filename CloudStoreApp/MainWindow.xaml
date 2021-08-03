@@ -24,7 +24,7 @@
             <MenuItem Header="File">
                 <MenuItem Header="Add Folder" Command="{Binding StoreNewFolderCommand}" InputGestureText="Ctrl+N" />
                 <Separator />
-                <MenuItem Header="Load Preferences..." InputGestureText="Ctrl+Shift+L" />
+                <MenuItem Header="Load Preferences..." Command="{Binding ImportPreferencesCommand}" InputGestureText="Ctrl+Shift+L" />
                 <MenuItem Header="Export Preferences..." InputGestureText="Ctrl+Shift+E" />
                 <Separator />
                 <MenuItem Header="Exit" />
