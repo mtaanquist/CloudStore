@@ -35,7 +35,7 @@ namespace CloudStoreApp.Helpers
                 );
             }
 
-            var storedFolder = new StoredFolder
+            StoredFolder? storedFolder = new()
             {
                 Id = Guid.NewGuid(),
                 Name = targetFolderName,
@@ -49,10 +49,12 @@ namespace CloudStoreApp.Helpers
             }
             else
             {
-                MoveFolder(prefs, storedFolder);
+                MoveFolder(prefs.CloudStorePath, storedFolder);
             }
-            NativeMethods.CreateSymbolicLink(
-                origSourceDirectoryName, GetTargetDirectory(prefs, storedFolder), 0x1);
+
+            _ = NativeMethods.CreateSymbolicLink(
+                origSourceDirectoryName,
+                GetTargetDirectory(prefs.CloudStorePath, storedFolder), 0x1);
 
             storedFolder.IsMoved = true;
             prefs.StoredFolders?.Add(storedFolder);
@@ -65,12 +67,15 @@ namespace CloudStoreApp.Helpers
             PreferencesHelper.SavePreferences(prefs);
         }
 
-        internal static void RestoreFolder(Preferences prefs, StoredFolder folder)
+        internal static bool RestoreFolder(string cloudStoreDirectoryPath, StoredFolder folder)
         {
-            var targetDirectoryPath = GetTargetDirectory(prefs, folder);
-            var sourceDirectoryInfo = new DirectoryInfo(GetSourceDirectory(folder));
+            string? targetDirectoryPath = GetTargetDirectory(cloudStoreDirectoryPath, folder);
+            DirectoryInfo? sourceDirectoryInfo = new(GetSourceDirectory(folder));
 
-            if (Directory.Exists(targetDirectoryPath) && Directory.Exists(sourceDirectoryInfo.FullName))
+            bool targetDirectoryExists = Directory.Exists(targetDirectoryPath);
+            bool sourceDirectoryExists = Directory.Exists(sourceDirectoryInfo.FullName);
+
+            if (targetDirectoryExists && sourceDirectoryExists)
             {
                 if (!sourceDirectoryInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
                 {
@@ -80,15 +85,21 @@ namespace CloudStoreApp.Helpers
                 else
                 {
                     DeleteFolder(sourceDirectoryInfo.FullName);
-                    NativeMethods.CreateSymbolicLink(sourceDirectoryInfo.FullName, targetDirectoryPath, 0x1);
                 }
             }
-            else if (Directory.Exists(targetDirectoryPath) && !Directory.Exists(sourceDirectoryInfo.FullName))
+            else if (targetDirectoryExists && !sourceDirectoryExists)
             {
-                // target directory exists, but source directory doesn't; re-establish reparse point
-                NativeMethods.CreateSymbolicLink(sourceDirectoryInfo.FullName, targetDirectoryPath, 0x1);
+                DirectoryInfo? sourceParentDirectoryInfo = sourceDirectoryInfo.Parent;
+                if (sourceParentDirectoryInfo is not null)
+                {
+                    string sourceParentDirectory = sourceParentDirectoryInfo.FullName;
+                    if (!Directory.Exists(sourceParentDirectory))
+                    {
+                        _ = Directory.CreateDirectory(sourceParentDirectory);
+                    }
+                }
             }
-            else if (!Directory.Exists(targetDirectoryPath) && Directory.Exists(sourceDirectoryInfo.FullName))
+            else if (!targetDirectoryExists && sourceDirectoryExists)
             {
                 if (sourceDirectoryInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
                 {
@@ -97,8 +108,7 @@ namespace CloudStoreApp.Helpers
                 }
                 else
                 {
-                    MoveFolder(prefs, folder);
-                    NativeMethods.CreateSymbolicLink(sourceDirectoryInfo.FullName, targetDirectoryPath, 0x1);
+                    MoveFolder(cloudStoreDirectoryPath, folder);
                 }
             }
             else
@@ -107,59 +117,70 @@ namespace CloudStoreApp.Helpers
                 folder.LastException = new DirectoryNotFoundException();
             }
 
-            prefs.StoredFolders.Add(folder);
+            return NativeMethods.CreateSymbolicLink(
+                sourceDirectoryInfo.FullName,
+                targetDirectoryPath,
+                0x1);
+        }
+
+        internal static void RemoveFolder(StoredFolder folder)
+        {
+            DeleteFolder(folder.SourceDirectory);
+            Directory.Move(
+                GetTargetDirectory(PreferencesHelper.GetCloudStoreDirectoryPath(), folder),
+                GetSourceDirectory(folder));
         }
 
         internal static string SelectFolder()
         {
-            using var folderDialog = new FolderBrowserDialog
+            using FolderBrowserDialog? folderDialog = new()
             {
                 ShowNewFolderButton = false
             };
 
-            var dialogResult = folderDialog.ShowDialog();
+            DialogResult dialogResult = folderDialog.ShowDialog();
             return dialogResult != DialogResult.OK ? string.Empty : folderDialog.SelectedPath;
         }
 
         private static void CopyFolder(Preferences prefs, StoredFolder folder)
         {
-            var sourceDirectory = GetSourceDirectory(folder);
-            var targetDirectory = GetTargetDirectory(prefs, folder);
+            string? sourceDirectory = GetSourceDirectory(folder);
+            string? targetDirectory = GetTargetDirectory(prefs.CloudStorePath, folder);
 
             CopyDirectory(sourceDirectory, targetDirectory);
         }
 
         private static void CopyDirectory(string sourceDirectory, string targetDirectory)
         {
-            var directory = new DirectoryInfo(sourceDirectory);
-            var directories = directory.GetDirectories();
+            DirectoryInfo? directory = new(sourceDirectory);
+            DirectoryInfo[]? directories = directory.GetDirectories();
             if (!Directory.Exists(targetDirectory))
             {
-                Directory.CreateDirectory(targetDirectory);
+                _ = Directory.CreateDirectory(targetDirectory);
             }
 
             // Get the files in the directory and copy them to the new location.
-            var files = directory.GetFiles();
-            foreach (var file in files)
+            FileInfo[]? files = directory.GetFiles();
+            foreach (FileInfo? file in files)
             {
-                var temporaryPath = Path.Combine(targetDirectory, file.Name);
-                file.CopyTo(temporaryPath, false);
+                string? temporaryPath = Path.Combine(targetDirectory, file.Name);
+                _ = file.CopyTo(temporaryPath, false);
             }
 
             // If copying subdirectories, copy them and their contents to new location.
-            foreach (var subDirectory in directories)
+            foreach (DirectoryInfo? subDirectory in directories)
             {
-                var temporaryPath = Path.Combine(targetDirectory, subDirectory.Name);
+                string? temporaryPath = Path.Combine(targetDirectory, subDirectory.Name);
                 CopyDirectory(subDirectory.FullName, temporaryPath);
             }
         }
 
-        private static void MoveFolder(Preferences prefs, StoredFolder folder)
+        private static void MoveFolder(string cloudStoreDirectoryPath, StoredFolder folder)
         {
             if (folder == null)
                 throw new ArgumentNullException(nameof(folder));
 
-            Directory.Move(folder.SourceDirectory, GetTargetDirectory(prefs, folder));
+            Directory.Move(folder.SourceDirectory, GetTargetDirectory(cloudStoreDirectoryPath, folder));
         }
 
         private static void DeleteFolder(string path)
@@ -178,7 +199,7 @@ namespace CloudStoreApp.Helpers
         internal static string GetFolderName(string path)
         {
             if (string.IsNullOrEmpty(path)) return string.Empty;
-            var directoryInfo = GetDirectoryInfo(path);
+            DirectoryInfo? directoryInfo = GetDirectoryInfo(path);
             return directoryInfo.Name;
         }
 
@@ -187,32 +208,25 @@ namespace CloudStoreApp.Helpers
             if (folder == null)
                 throw new ArgumentNullException(nameof(folder));
 
-            if (folder.SourceDirectory.Contains(USER_PROFILE_PATH, StringComparison.OrdinalIgnoreCase))
-            {
-                return folder.SourceDirectory.Replace(
+            return folder.SourceDirectory.Contains(USER_PROFILE_PATH, StringComparison.OrdinalIgnoreCase)
+                ? folder.SourceDirectory.Replace(
                     USER_PROFILE_PATH,
                     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                     StringComparison.OrdinalIgnoreCase
-                );
-            }
-
-            return folder.SourceDirectory;
+                )
+                : folder.SourceDirectory;
         }
 
-        internal static string GetTargetDirectory(Preferences prefs, StoredFolder folder)
+        internal static string GetTargetDirectory(string cloudStoreDirectoryPath, StoredFolder folder)
         {
-            if (folder == null)
-                throw new ArgumentNullException(nameof(folder));
-
-            return Path.Combine(prefs.CloudStorePath, folder.Name);
+            return folder == null
+                ? throw new ArgumentNullException(nameof(folder))
+                : Path.Combine(cloudStoreDirectoryPath, folder.Name);
         }
 
         private static DirectoryInfo GetDirectoryInfo(string path)
         {
-            if (string.IsNullOrEmpty(path))
-                throw new ArgumentNullException(nameof(path));
-
-            return new DirectoryInfo(path);
+            return string.IsNullOrEmpty(path) ? throw new ArgumentNullException(nameof(path)) : new DirectoryInfo(path);
         }
     }
 }

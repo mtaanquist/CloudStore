@@ -9,7 +9,7 @@
         xmlns:vm="clr-namespace:CloudStoreApp.ViewModels"
         mc:Ignorable="d"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="CloudStore" MinHeight="480" MinWidth="800" MaxWidth="800">
+        Title="CloudStore" MinHeight="480" MinWidth="850" Height="480" Width="850">
 
     <Window.DataContext>
         <vm:MainWindowViewModel />
@@ -60,7 +60,7 @@
                     <Grid HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" MinWidth="660" />
-                            <ColumnDefinition Width="80" />
+                            <ColumnDefinition Width="140" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*" />
@@ -87,9 +87,15 @@
                                     Visibility="Hidden">
                                 <icons:FontAwesome Kind="ExclamationCircleSolid" />
                             </Button>
-                            <Button>
+                            <Button Command="{Binding RedoCommand}" Margin="2px">
+                                <icons:FontAwesome Kind="RedoSolid" />
+                            </Button>
+                            <Button Command="{Binding OpenFolderCommand}" Margin="2px">
                                 <icons:FontAwesome Kind="FolderOpenSolid" />
                             </Button>
+                            <Button Command="{Binding RemoveFolderCommand}" Margin="2px" Background="OrangeRed" Foreground="White">
+                                <icons:FontAwesome Kind="TrashSolid" />
+                            </Button>                            
                         </StackPanel>
                     </Grid>
                 </DataTemplate>

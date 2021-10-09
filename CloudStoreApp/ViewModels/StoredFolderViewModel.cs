@@ -1,4 +1,8 @@
-﻿using System;
+﻿using CloudStoreApp.Commands;
+using CloudStoreApp.Helpers;
+using CloudStoreApp.Models;
+using System;
+using System.Windows.Input;
 
 namespace CloudStoreApp.ViewModels
 {
@@ -8,6 +12,31 @@ namespace CloudStoreApp.ViewModels
         private string _name = string.Empty;
         private string _sourceDirectory = string.Empty;
         private string _targetDirectory = string.Empty;
+        private StoredFolder _storedFolder = new();
+
+        #region Commands
+        public ICommand OpenFolderCommand { get; }
+        public ICommand RemoveFolderCommand { get; }
+        public ICommand RedoCommand { get; }
+        #endregion
+
+        public StoredFolderViewModel()
+        {
+            OpenFolderCommand = new RelayCommand(param =>
+            {
+                CommandHelper.ExecuteOpenFolder(this);
+            }, param => true);
+
+            RemoveFolderCommand = new RelayCommand(param =>
+            {
+                CommandHelper.ExecuteOpenFolder(this);
+            }, param => true);
+
+            RedoCommand = new RelayCommand(param =>
+            {
+                CommandHelper.ExecuteRedoFolder(this);
+            }, param => true);
+        }
 
         public Guid Id
         {
@@ -25,7 +54,11 @@ namespace CloudStoreApp.ViewModels
             get => _name;
             set
             {
-                if (value == _name) return;
+                if (value == _name)
+                {
+                    return;
+                }
+
                 _name = value;
                 base.OnPropertyChanged(nameof(Name));
             }
@@ -36,7 +69,11 @@ namespace CloudStoreApp.ViewModels
             get => _sourceDirectory;
             set
             {
-                if (value == _sourceDirectory) return;
+                if (value == _sourceDirectory)
+                {
+                    return;
+                }
+
                 _sourceDirectory = value;
                 base.OnPropertyChanged(nameof(SourceDirectory));
             }
@@ -47,8 +84,27 @@ namespace CloudStoreApp.ViewModels
             get => _targetDirectory;
             set
             {
-                if (value == _targetDirectory) return;
+                if (value == _targetDirectory)
+                {
+                    return;
+                }
+
                 _targetDirectory = value;
+                base.OnPropertyChanged(nameof(TargetDirectory));
+            }
+        }
+
+        public StoredFolder StoredFolder
+        {
+            get => _storedFolder;
+            set
+            {
+                if (value == _storedFolder)
+                {
+                    return;
+                }
+
+                _storedFolder = value;
                 base.OnPropertyChanged(nameof(TargetDirectory));
             }
         }

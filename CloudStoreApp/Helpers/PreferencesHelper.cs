@@ -48,7 +48,7 @@ namespace CloudStoreApp.Helpers
             }
 
             string content = File.ReadAllText(filePath);
-            var newPrefs = JsonSerializer.Deserialize<Preferences>(content);
+            Preferences? newPrefs = JsonSerializer.Deserialize<Preferences>(content);
             if (newPrefs is null)
             {
                 throw new FileLoadException(filePath);
@@ -57,9 +57,10 @@ namespace CloudStoreApp.Helpers
             prefs.StoredFolders.Clear();
 
             // re-establish directories where possible
-            foreach (var folder in newPrefs.StoredFolders)
+            foreach (StoredFolder? folder in newPrefs.StoredFolders)
             {
-                StorageHelper.RestoreFolder(prefs, folder);
+                StorageHelper.RestoreFolder(prefs.CloudStorePath, folder);
+                prefs.StoredFolders.Add(folder);
             }
 
             // when done with the file, export it as a new file
@@ -68,7 +69,7 @@ namespace CloudStoreApp.Helpers
 
         public static void LoadExistingPreferencesFile()
         {
-            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            Microsoft.Win32.OpenFileDialog openFileDialog = new()
             {
                 FileName = @"preferences",
                 DefaultExt = @".json",
@@ -89,14 +90,9 @@ namespace CloudStoreApp.Helpers
                 throw new FileNotFoundException(PREFERENCES_FILENAME);
             }
 
-            var content = File.ReadAllText(PREFERENCES_FILENAME);
-            var preferences = JsonSerializer.Deserialize<Preferences>(content);
-            if (preferences is null)
-            {
-                throw new FileLoadException();
-            }
-
-            return preferences;
+            string? content = File.ReadAllText(PREFERENCES_FILENAME);
+            Preferences? preferences = JsonSerializer.Deserialize<Preferences>(content);
+            return preferences is null ? throw new FileLoadException() : preferences;
         }
 
         public static bool PreferencesFileExists()
@@ -109,6 +105,12 @@ namespace CloudStoreApp.Helpers
             Preferences prefs = new();
             JsonSerializerOptions? options = new() { WriteIndented = true };
             File.WriteAllText(PREFERENCES_FILENAME, JsonSerializer.Serialize(prefs, options));
+        }
+
+        public static string GetCloudStoreDirectoryPath()
+        {
+            Preferences prefs = LoadPreferences();
+            return prefs is null ? string.Empty : prefs.CloudStorePath;
         }
     }
 }

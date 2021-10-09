@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.IO;
 using System.Windows.Input;
 using CloudStoreApp.Commands;
 using CloudStoreApp.Helpers;
@@ -75,7 +74,8 @@ namespace CloudStoreApp.ViewModels
                 {
                     Id = storedFolder.Id,
                     Name = storedFolder.Name,
-                    SourceDirectory = StorageHelper.GetSourceDirectory(storedFolder)
+                    SourceDirectory = StorageHelper.GetSourceDirectory(storedFolder),
+                    StoredFolder = storedFolder
                 });
             });
         }
