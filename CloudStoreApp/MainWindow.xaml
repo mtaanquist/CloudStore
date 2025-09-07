@@ -85,10 +85,10 @@
                             <Button Margin="4,8,4,0"
                                     Background="OrangeRed"
                                     Visibility="Hidden">
-                                <icons:FontAwesome Kind="ExclamationCircleSolid" />
+                                <icons:FontAwesome Kind="ExclamationSolid" />
                             </Button>
                             <Button Command="{Binding RedoCommand}" Margin="2px">
-                                <icons:FontAwesome Kind="RedoSolid" />
+                                <icons:FontAwesome Kind="ArrowRotateRightSolid" />
                             </Button>
                             <Button Command="{Binding OpenFolderCommand}" Margin="2px">
                                 <icons:FontAwesome Kind="FolderOpenSolid" />

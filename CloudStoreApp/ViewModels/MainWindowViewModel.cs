@@ -4,79 +4,75 @@ using CloudStoreApp.Commands;
 using CloudStoreApp.Helpers;
 using CloudStoreApp.Models;
 
-namespace CloudStoreApp.ViewModels
+namespace CloudStoreApp.ViewModels;
+
+public class MainWindowViewModel : ViewModelBase
 {
-    public class MainWindowViewModel : ViewModelBase
+    public MainWindowViewModel()
     {
-        public MainWindowViewModel()
+        // determine if this is first launch
+        FirstLaunch = !PreferencesHelper.PreferencesFileExists();
+        if (FirstLaunch)
         {
-            // determine if this is first launch
-            FirstLaunch = !PreferencesHelper.PreferencesFileExists();
-            if (FirstLaunch)
-            {
-                // on first launch, create a new preferences file
-                PreferencesHelper.CreatePreferencesFile();
-            }
-            else
-            {
-                Preferences? prefs = PreferencesHelper.LoadPreferences();
-                FirstLaunch = !string.IsNullOrEmpty(prefs?.CloudStorePath);
-            }
-
-            StoreNewFolderCommand = new RelayCommand(param =>
-            {
-                StoreFolderWindow storeFolderWindow = new();
-                _ = storeFolderWindow.ShowDialog();
-
-                BuildStoredFoldersList();
-            }, param => true);
-
-            OpenPreferencesCommand = new RelayCommand(param =>
-            {
-                PreferencesWindow preferencesWindow = new();
-                _ = preferencesWindow.ShowDialog();
-
-                BuildStoredFoldersList();
-            }, param => true);
-
-            ImportPreferencesCommand = new RelayCommand(param =>
-            {
-                PreferencesHelper.LoadExistingPreferencesFile();
-            }, param => true);
-
-            BuildStoredFoldersList();
+            // on first launch, create a new preferences file
+            PreferencesHelper.CreatePreferencesFile();
+        }
+        else
+        {
+            Preferences? prefs = PreferencesHelper.LoadPreferences();
+            FirstLaunch = string.IsNullOrEmpty(prefs?.CloudStorePath);
         }
 
-        public bool FirstLaunch { get; set; }
-
-        public ObservableCollection<StoredFolderViewModel> StoredFolders { get; } = new();
-
-        #region Commands
-        public ICommand StoreNewFolderCommand { get; }
-        public ICommand OpenPreferencesCommand { get; }
-        public ICommand ImportPreferencesCommand { get; }
-        #endregion
-
-        private void BuildStoredFoldersList()
+        StoreNewFolderCommand = new RelayCommand(_ =>
         {
-            Preferences prefs = PreferencesHelper.LoadPreferences();
+            StoreFolderWindow storeFolderWindow = new();
+            _ = storeFolderWindow.ShowDialog();
+            BuildStoredFoldersList();
+        });
 
-            StoredFolders.Clear();
+        OpenPreferencesCommand = new RelayCommand(_ =>
+        {
+            PreferencesWindow preferencesWindow = new();
+            _ = preferencesWindow.ShowDialog();
+            BuildStoredFoldersList();
+        });
 
-            if (prefs.StoredFolders == null || prefs.StoredFolders.Count == 0)
+        ImportPreferencesCommand = new RelayCommand(_ =>
+        {
+            PreferencesHelper.LoadExistingPreferencesFile();
+            BuildStoredFoldersList();
+        });
+
+        BuildStoredFoldersList();
+    }
+
+    public bool FirstLaunch { get; set; }
+
+    public ObservableCollection<StoredFolderViewModel> StoredFolders { get; } = [];
+
+    #region Commands
+    public ICommand StoreNewFolderCommand { get; }
+    public ICommand OpenPreferencesCommand { get; }
+    public ICommand ImportPreferencesCommand { get; }
+    #endregion
+
+    private void BuildStoredFoldersList()
+    {
+        Preferences prefs = PreferencesHelper.LoadPreferences();
+
+        StoredFolders.Clear();
+
+        if (prefs.StoredFolders.Count == 0)
+            return;
+
+        foreach (StoredFolder storedFolder in prefs.StoredFolders)
+        {
+            StoredFolders.Add(new StoredFolderViewModel
             {
-                return;
-            }
-
-            prefs.StoredFolders.ForEach(storedFolder =>
-            {
-                StoredFolders.Add(new StoredFolderViewModel
-                {
-                    Id = storedFolder.Id,
-                    Name = storedFolder.Name,
-                    SourceDirectory = StorageHelper.GetSourceDirectory(storedFolder),
-                    StoredFolder = storedFolder
-                });
+                Id = storedFolder.Id,
+                Name = storedFolder.Name,
+                SourceDirectory = StorageHelper.GetSourceDirectory(storedFolder),
+                StoredFolder = storedFolder
             });
         }
     }
